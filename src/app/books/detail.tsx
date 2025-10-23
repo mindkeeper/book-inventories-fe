@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBook } from "@/hooks/books";
 import { useNavigate, useParams } from "react-router";
+import { BookEditDialog } from "@/components/BookEditDialog";
 
 function BookDetail() {
   const navigate = useNavigate();
@@ -12,10 +13,13 @@ function BookDetail() {
 
   return (
     <div className="p-4">
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <Button variant="secondary" onClick={() => navigate(-1)}>
           ← Back to list
         </Button>
+        {!isLoading && book && (
+          <BookEditDialog book={book} />
+        )}
       </div>
 
       {isLoading && <div>Loading book...</div>}

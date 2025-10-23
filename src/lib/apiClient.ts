@@ -89,4 +89,59 @@ export class ApiClient {
       throw new Error("An error occurred");
     }
   }
+  async patch<T>(
+    path: string,
+    data: Record<string, unknown>
+  ): Promise<TResponse<T>> {
+    try {
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: "PATCH",
+        headers: this.getHeaders(true),
+        body: JSON.stringify(data),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        const msg = String(
+          json?.message ?? `Request failed with status ${response.status}`
+        );
+        throw new Error(msg);
+      }
+
+      return json as TResponse<T>;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(error);
+        throw error;
+      }
+      throw new Error("An error occurred");
+    }
+  }
+
+  async delete<T>(path: string): Promise<TResponse<T>> {
+    try {
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: "DELETE",
+        headers: this.getHeaders(false),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        const msg = String(
+          json?.message ?? `Request failed with status ${response.status}`
+        );
+        throw new Error(msg);
+      }
+
+      return json as TResponse<T>;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(error);
+        throw error;
+      }
+      throw new Error("An error occurred");
+    }
+  }
 }

@@ -1,6 +1,7 @@
+import type { Book, TBookSchema, TBookUpdateSchma } from "@/types/book";
 import { type TPaginatedResponse } from "@/types/common";
 import { api } from "@/utils/api";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 type BookQueryParams = {
   genre?: string; // filter using genre.keyName
   page?: number;
@@ -13,17 +14,6 @@ const bookKeys = {
   list: (filters: BookQueryParams) => [...bookKeys.lists(), filters] as const,
   details: () => [...bookKeys.all, "detail"] as const,
   detail: (id: string) => [...bookKeys.details(), id] as const,
-};
-
-type Book = {
-  id: string;
-  title: string;
-  author: string;
-  published: string;
-  genre: {
-    id: string;
-    name: string;
-  };
 };
 
 export const useBooks = (params: BookQueryParams) => {
@@ -48,5 +38,44 @@ export const useBook = (id: string) => {
   return useQuery({
     queryFn: () => api.get<Book>(`/books/${id}`),
     queryKey: bookKeys.detail(id),
+  });
+};
+
+export const useCreateBook = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: TBookSchema) => api.post<Book>("/books", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: bookKeys.all,
+      });
+    },
+  });
+};
+
+export const useEditBook = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: TBookUpdateSchma) =>
+      api.patch<Book>(`/books/${data.id}`, data.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: bookKeys.all,
+      });
+    },
+  });
+};
+
+export const useDeleteBook = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.delete<Book>(`/books/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: bookKeys.all,
+      });
+    },
   });
 };
