@@ -35,6 +35,21 @@ export class ApiClient {
     return h;
   }
 
+  private handleUnauthorized(path: string): void {
+    // Don't clear token for sign-in or sign-up endpoints
+    const isAuthEndpoint =
+      path.includes("/auth/sign-in") || path.includes("/auth/sign-up");
+
+    if (!isAuthEndpoint && typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("access_token");
+        this.token = null;
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }
+
   async get<T>(path: string): Promise<TResponse<T>> {
     try {
       const response = await fetch(`${this.baseUrl}${path}`, {
@@ -45,6 +60,11 @@ export class ApiClient {
       const json = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          this.handleUnauthorized(path);
+        }
+
         const msg = String(
           json?.message ?? `Request failed with status ${response.status}`
         );
@@ -74,6 +94,11 @@ export class ApiClient {
       const json = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          this.handleUnauthorized(path);
+        }
+
         const msg = String(
           json?.message ?? `Request failed with status ${response.status}`
         );
@@ -103,6 +128,11 @@ export class ApiClient {
       const json = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          this.handleUnauthorized(path);
+        }
+
         const msg = String(
           json?.message ?? `Request failed with status ${response.status}`
         );
@@ -129,6 +159,11 @@ export class ApiClient {
       const json = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          this.handleUnauthorized(path);
+        }
+
         const msg = String(
           json?.message ?? `Request failed with status ${response.status}`
         );

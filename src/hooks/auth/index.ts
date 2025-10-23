@@ -11,6 +11,7 @@ type AuthRequest = {
 type AuthTokens = {
   access_token: string;
 };
+
 export const useSignUp = () => {
   const navigate = useNavigate();
   return useMutation<TResponse<AuthTokens>, Error, AuthRequest>({
@@ -38,6 +39,22 @@ export const useSignIn = () => {
       setTimeout(() => {
         navigate("/");
       }, 500);
+    },
+  });
+};
+
+export const useLogout = () => {
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: async () => {
+      // Remove token from localStorage
+      localStorage.removeItem("access_token");
+      return Promise.resolve();
+    },
+    onSuccess: () => {
+      // Navigate to sign-in page after logout
+      navigate("/sign-in", { replace: true });
     },
   });
 };
