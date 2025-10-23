@@ -14,11 +14,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useBooks } from "@/hooks/books";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useBooks, useDeleteBook } from "@/hooks/books";
 import { useGenres } from "@/hooks/genre";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { useDebounceCallback } from "usehooks-ts";
 import { Link } from "react-router";
+import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { BookCreateDialog } from "@/components/BookCreateDialog";
 
 const useBookParmas = () =>
   useQueryStates({
@@ -49,12 +62,17 @@ function Home() {
   const canPrev = !!meta?.previousPage && currentPage > 1;
   const canNext = !!meta?.nextPage && currentPage < totalPages;
 
+  const deleteBookMutation = useDeleteBook();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState<{ id: string; title: string } | null>(null);
+
   // Reset to page 1 when changing genre
   const onGenreChange = (value: string) => {
-    // Radix SelectItem cannot have empty string value.
-    // Map special "all" option back to empty string for clearing selection.
-    const mapped = value === "all" ? "" : value;
-    setParams({ genre: mapped, page: null, q: null });
+    if (value === "all") {
+      setParams({ genre: null, page: null });
+    } else {
+      setParams({ genre: value, page: null });
+    }
   };
 
   const onPrev = () => {
@@ -74,6 +92,23 @@ function Home() {
       maxWait: 1000,
     }
   );
+
+  const handleDeleteBook = (bookId: string) => {
+    deleteBookMutation.mutate(bookId, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setBookToDelete(null);
+      },
+      onError: (error) => {
+        console.error("Failed to delete book:", error);
+      },
+    });
+  };
+
+  const openDeleteDialog = (bookId: string, bookTitle: string) => {
+    setBookToDelete({ id: bookId, title: bookTitle });
+    setDeleteDialogOpen(true);
+  };
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -102,6 +137,8 @@ function Home() {
           placeholder="Search books..."
           className="w-64"
         />
+        
+        <BookCreateDialog />
       </div>
 
       {/* Books list */}
@@ -129,9 +166,16 @@ function Home() {
                   Published: {b.published}
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex justify-between">
                 <Button size="sm" variant="outline" asChild>
                   <Link to={`/books/${b.id}`}>Details</Link>
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  onClick={() => openDeleteDialog(b.id, b.title)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -151,8 +195,29 @@ function Home() {
           Next
         </Button>
       </div>
-    </div>
-  );
-}
+
+        {/* Single Alert Dialog for all delete operations */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the book "{bookToDelete?.title}" from the inventory.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => bookToDelete && handleDeleteBook(bookToDelete.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
 
 export default Home;
